@@ -6,7 +6,7 @@ local event = require("event")
 local os = require("os")
 unet = require("unet")
 
-local version,osBuild = "0.0.4 ALPHA","OpenOS 1.5"
+local version,osBuild = "0.0.5 ALPHA","OpenOS 1.5"
 
 if version ~= unet.driver.info.version and not unet.driver.info.allowOutdated then
   error("Version mismatch: refer to documentation",3)
