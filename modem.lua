@@ -50,8 +50,8 @@ if tArgs[1] == "init" and component.type(tArgs[2]) == "modem" then
     if component.invoke(unet.driver.inter[id].hw_addr,"send",dest,nport,flag,data,os.date()) then
       unet.driver.inter[id].tx.packets = unet.driver.inter[id].tx.packets + 1
       unet.driver.inter[id].tx.bytes = unet.driver.inter[id].tx.bytes + #flag + #data + #os.date()
-	  return true
-	end
+      return true
+    end
     
   end
   
@@ -73,7 +73,7 @@ if tArgs[1] == "init" and component.type(tArgs[2]) == "modem" then
         break
       end
     end
-	
+
     if not nport then
       error("Bad argument: 2, no such port",3)
     end
@@ -81,13 +81,13 @@ if tArgs[1] == "init" and component.type(tArgs[2]) == "modem" then
     if component.invoke(unet.driver.inter[id].hw_addr,"broadcast",nport,flag,data,os.date()) then
       unet.driver.inter[id].tx.packets = unet.driver.inter[id].tx.packets + 1
       unet.driver.inter[id].tx.bytes = unet.driver.inter[id].tx.bytes + #flag + #data + #os.date()
-	  return true
-	end
+      return true
+    end
 	
   end
     
   unet.driver.inter[id].isAvailable = true
-  
+  unet.driver.inter[id].type = "ethernet"
   unet.driver.inter[id].routeAddr = "0"
   
   unet.driver.inter[id].tx = {["packets"]=0,["bytes"]=0}
@@ -139,7 +139,7 @@ if tArgs[1] == "init" and component.type(tArgs[2]) == "tunnel" then
   end
   
   unet.driver.inter[id].isAvailable = true
-  
+  unet.driver.inter[id].type = "tunnel"
   unet.driver.inter[id].routeAddr = "0"
   
   unet.driver.inter[id].tx = {["packets"]=0,["bytes"]=0}
