@@ -97,7 +97,7 @@ function unet.driver.getID(addr,create)
     id = #unet.driver.inter + 1
   end
   
-  unet.driver.inter[id] = {["hw_addr"]=addr,["routeAddr"]="0",["parent"]="",["parusr"]="",["parpass"]=""}
+  unet.driver.inter[id] = {["hw_addr"]=addr,["routeAddr"]="0",["parent"]="0",["parusr"]="",["parpass"]=""}
   unet.driver.saveConfig()
   return id
   
