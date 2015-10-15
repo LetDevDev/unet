@@ -1,5 +1,6 @@
 local computer = require("computer")
 local event = require("event")
+local os = require ("os")
 local pack = require("serialization")
 local unet = require("unet")
 
@@ -18,7 +19,8 @@ unet.arp.routes = {}
 function unet.arp.getAddress(id)
   if unet.driver.inter[id] and unet.driver.inter[id].isAvailable then
     if unet.driver.inter[id].parent == "0" then
-    
+      local addr = math.random()
+      
     end
   end
 end
