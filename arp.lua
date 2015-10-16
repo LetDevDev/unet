@@ -48,7 +48,7 @@ function unet.arp.scan(id,addr)
     ["source"] = unet.driver.inter[id].parent.."/"..unet.driver.inter[id].routeAddr}))
 end
 
-function unet.arp.linkParent(id,)
+function unet.arp.linkParent(id)
   return false,"incomplete"
 end
 
