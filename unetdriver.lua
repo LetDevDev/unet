@@ -13,7 +13,7 @@ unet.driver.inter = {}
 
 unet.driver.info = {    
 ["osBuild"] = "OpenOS 1.5",
-["version"] = "0.0.4 ALPHA",
+["version"] = "0.0.5 ALPHA",
 ["allowOutdated"] = false,
 ["config"] = "/unet/driver/config.cfg",
 ["mods"] = "/unet/driver/mods"
