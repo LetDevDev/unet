@@ -4,7 +4,7 @@ local os = require ("os")
 local pack = require("serialization")
 local unet = require("unet")
 
-unet.arp.routes = {}
+unet.arp = {routes = {}}
 
 --arp addressing system for unet, used for addressing in both managed and unmanaged networks.
 --basically is the actual core of unet, as most modules will now depend on this.
