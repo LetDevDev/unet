@@ -29,7 +29,7 @@ end
 --the first available interface, and returns it's id.
 
 function unet.resolveID()
-  for for i=1,#unet.driver.inter do
+  for i=1,#unet.driver.inter do
     if unet.driver.inter[i] and unet.driver.inter[i].isAvailable then 
 	    return i
 	  end
