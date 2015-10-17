@@ -77,7 +77,7 @@ local function onMessage(_,source,id,port,flag,time,data)
     if flag == "ARP_REQUEST" then
       data = pack.unserialize(data)
       if unet.driver.inter[id].routeAddr ~= "0" and unet.driver.inter[id].routeAddr == data.dest then
-        unet.driver.inter[id].usend(source,"data0","ARP_REPLY",unet.driver.inter[id].routeAddr)
+        unet.driver.inter[id].usend(source,"data0","ARP_REPLY",unet.arp.getAddress(id))
       end
       if data.source ~= "0/0" then
         unet.arp.routes[data.source] = {["id"] = id,["hw"] = source}
