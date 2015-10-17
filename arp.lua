@@ -20,17 +20,22 @@ function unet.arp.getAddress(id)
   if unet.driver.inter[id] and unet.driver.inter[id].isAvailable then
     
     if unet.driver.inter[id].parent == "0" then
+      print("getting address for unmanaged network on ",id)
       while true do
         math.randomseed(os.time())
         local addr = math.random(65535)
+        print("attempting to assign address ",addr," to interface ",id)
         unet.arp.scan(id,"0/"..addr)
         while true do
+        print("loop")
         local message = {event.pull(5,"unet_hw_message")}
           if not message then
             unet.driver.inter[id].routeAddr = tostring(addr)
+            print("no conflicts found, address assigned")
             return true,tostring(addr)
           elseif message[3] == id and message[4] == "data0" 
             and message[5] == "ARP_REPLY" and message[5] == tostring(addr) then
+            print("address is in use, retrying")
             break
           end
         end
