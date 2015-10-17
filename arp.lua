@@ -16,26 +16,26 @@ unet.arp = {routes = {}}
 --0/1 is a valid address
 --4/2543/2522/33/442/88/9 is also a valid address (must be a big network to get this though!)
 
-function unet.arp.getAddress(id)
+function unet.arp.assignAddress(id)
   if unet.driver.inter[id] and unet.driver.inter[id].isAvailable then
     
     if unet.driver.inter[id].parent == "0" then
-      print("getting address for unmanaged network on ",id)
+      --print("getting address for unmanaged network on ",id)
       while true do
         math.randomseed(os.time())
         local addr = math.random(65535)
-        print("attempting to assign address ",addr," to interface ",id)
+        --print("attempting to assign address ",addr," to interface ",id)
         unet.arp.scan(id,"0/"..addr)
         while true do
-        print("loop")
+        --print("loop")
         local message = {event.pull(5,"unet_hw_message")}
           if #message == 0 then
             unet.driver.inter[id].routeAddr = tostring(addr)
-            print("no conflicts found, address assigned")
+            --print("no conflicts found, address assigned")
             return true,tostring(addr)
           elseif message[3] == id and message[4] == "data0" 
             and message[5] == "ARP_REPLY" and message[5] == tostring(addr) then
-            print("address is in use, retrying")
+            --print("address is in use, retrying")
             break
           end
         end
@@ -43,6 +43,10 @@ function unet.arp.getAddress(id)
     end
   
   end
+end
+
+function unet.arp.getAddress(id)
+  return unet.driver.inter[id].parent.."/"..unet.driver.inter[id].routeAddr
 end
 
 function unet.arp.scan(id,addr)
