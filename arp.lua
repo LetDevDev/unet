@@ -29,7 +29,7 @@ function unet.arp.getAddress(id)
         while true do
         print("loop")
         local message = {event.pull(5,"unet_hw_message")}
-          if not message then
+          if #message == 0 then
             unet.driver.inter[id].routeAddr = tostring(addr)
             print("no conflicts found, address assigned")
             return true,tostring(addr)
