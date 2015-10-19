@@ -90,7 +90,12 @@ function unet.send(address,port,flag,data)
       source=unet.arp.getAddress(route.id),data=data}))
     return true
   else
-    return false
+    for i=1,#unet.driver.inter do
+      local isMatching = unet.arp.compareAddr(i,address)
+      if isMatching == "subnet" then
+        
+      end
+    end
   end
 end
 
