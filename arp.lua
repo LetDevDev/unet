@@ -49,12 +49,32 @@ function unet.arp.getAddress(id)
   return unet.driver.inter[id].parent.."/"..unet.driver.inter[id].routeAddr
 end
 
+function unet.arp.compareAddr(id,addr)
+  if addr == unet.arp.getAddress(id) then 
+    return "match"
+  elseif addr == unet.driver.inter[id].parent then
+    return "parent"
+  elseif string.sub(addr,1,#unet.driver.inter[id].parent) == unet.driver.inter[id].parent then
+    return "subnet"
+  else
+    return "not"
+  end
+end
+
 function unet.arp.scan(id,addr)
   if not id then
     id = unet.resolveID()
   end
   unet.driver.inter[id].ubroadcast("data0","ARP_REQUEST",pack.serialize({["dest"] = addr,
-    ["source"] = unet.driver.inter[id].parent.."/"..unet.driver.inter[id].routeAddr}))
+    ["source"] = unet.arp.getAddress()}))
+    
+  local data = {event.pull(5,"unet_hw_message",nil,id,"data0","ARP_REPLY",nil,addr)}
+    if #data > 0 then
+      unet.arp.routes[addr] = {["id"] = id, ["hw"] = data[2]}
+      return true,data[2]
+    else
+      return false
+    end
 end
 
 function unet.arp.linkParent(id)
@@ -63,11 +83,14 @@ end
 
 --arp aware send function for unet
 
-function unet.send(address,flag,data)
-  if unet.routes[address] then
-    local route = unet.routes[address]
-    unet.driver.inter[route.id].usend(route.hw,flag,pack.serialize({dest=address,
-      source=unet.driver.inter[route.id].routeAddr,data=data}))
+function unet.send(address,port,flag,data)
+  if unet.arp.routes[address] then
+    local route = unet.arp.routes[address]
+    unet.driver.inter[route.id].usend(route.hw,port,flag,pack.serialize({dest=address,
+      source=unet.arp.getAddress(route.id),data=data}))
+    return true
+  else
+    return false
   end
 end
 
@@ -76,15 +99,12 @@ local function onMessage(_,source,id,port,flag,time,data)
     
     if flag == "ARP_REQUEST" then
       data = pack.unserialize(data)
-      if unet.driver.inter[id].routeAddr ~= "0" and unet.driver.inter[id].routeAddr == data.dest then
+      if unet.driver.inter[id].routeAddr ~= "0" and unet.arp.getAddress(id) == data.dest then
         unet.driver.inter[id].usend(source,"data0","ARP_REPLY",unet.arp.getAddress(id))
       end
       if data.source ~= "0/0" then
         unet.arp.routes[data.source] = {["id"] = id,["hw"] = source}
       end
-    elseif flag == "ARP_REPLY" and not unet.arp.routes[data] then
-      unet.arp.routes[data] = {["id"] = id,["hw"] = source}
-    end
     
   end
 end
