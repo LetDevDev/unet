@@ -83,34 +83,46 @@ end
 --arp aware send function for unet
 
 function unet.send(address,port,flag,data)
-  if unet.arp.routes[address] then
+  
+  if unet.arp.routes[address] then --we know this route, we can fire a straight shot to the destination
     local route = unet.arp.routes[address]
     unet.driver.inter[route.id].usend(route.hw,port,flag,pack.serialize({dest=address,
       source=unet.arp.getAddress(route.id),data=data}))
     return true
+    
   else
+    
     for i=1,#unet.driver.inter do
+      
       local isMatching = unet.arp.compareAddr(i,address)
-      if isMatching == "subnet" then
+      
+      if isMatching == "subnet" then --we don't know who this is, but we know they are on the same network as us
+        local is,at = unet.arp.scan(i,address)
         
+        if is then -- we found them, we can now communicate.
+          unet.driver.inter[route.id].usend(at,port,flag,pack.serialize({dest=address,
+            source=unet.arp.getAddress(i),data=data}))
+        end
+        
+      elseif isMatching == "not" then
+        if unet.a
       end
+    
     end
   end
 end
 
 local function onMessage(_,source,id,port,flag,time,data)
-  if port == "data0" then
     
-    if flag == "ARP_REQUEST" then
-      data = pack.unserialize(data)
-      if unet.driver.inter[id].routeAddr ~= "0" and unet.arp.getAddress(id) == data.dest then
-        unet.driver.inter[id].usend(source,"data0","ARP_REPLY",unet.arp.getAddress(id))
-      end
-      if data.source ~= "0/0" then
-        unet.arp.routes[data.source] = {["id"] = id,["hw"] = source}
-      end
-    
-  end
+  if flag == "ARP_REQUEST" and port == "data0" then
+    data = pack.unserialize(data)
+    if unet.driver.inter[id].routeAddr ~= "0" and unet.arp.getAddress(id) == data.dest then
+      unet.driver.inter[id].usend(source,"data0","ARP_REPLY",unet.arp.getAddress(id))
+    end
+    if data.source ~= "0/0" then
+      unet.arp.routes[data.source] = {["id"] = id,["hw"] = source}
+    end
+
 end
 
 event.listen("unet_hw_message",onMessage)
