@@ -76,41 +76,24 @@ function unet.arp.scan(id,addr)
     end
 end
 
-function unet.arp.linkParent(id)
-  return false,"incomplete"
-end
+--unicast for unet, a targeted message
 
---arp aware send function for unet
-
-function unet.send(address,port,flag,data)
+function unet.ucast(addr, flag, data)
   
-  if unet.arp.routes[address] then --we know this route, we can fire a straight shot to the destination
-    local route = unet.arp.routes[address]
-    unet.driver.inter[route.id].usend(route.hw,port,flag,pack.serialize({dest=address,
-      source=unet.arp.getAddress(route.id),data=data}))
-    return true
-    
-  else
-    
-    for i=1,#unet.driver.inter do
-      
-      local isMatching = unet.arp.compareAddr(i,address)
-      
-      if isMatching == "subnet" then --we don't know who this is, but we know they are on the same network as us
-        local is,at = unet.arp.scan(i,address)
-        
-        if is then -- we found them, we can now communicate.
-          unet.driver.inter[route.id].usend(at,port,flag,pack.serialize({dest=address,
-            source=unet.arp.getAddress(i),data=data}))
-        end
-        
-      elseif isMatching == "not" then
-        if unet.a
-      end
-    
-    end
-  end
 end
+
+--multicast for unet, a targeted message for a group of devices
+
+function unet.mcast(addr, flag, data)
+
+end
+
+--broadcast for unet, network targeted message to reach all devices
+
+function unet.bcast(addr, flag, data)
+
+end
+
 
 local function onMessage(_,source,id,port,flag,time,data)
     
