@@ -6,6 +6,7 @@ local unet = require("unet")
 
 unet.arp = {routes = {}}
 
+
 --arp addressing system for unet, used for addressing in both managed and unmanaged networks.
 --basically is the actual core of unet, as most modules will now depend on this.
 --address format is in the form of numbers split by slashes, all numbers before the final slash
@@ -22,7 +23,9 @@ local function verbose(bool, ...)
   end
 end
 
-function unet.arp.assignAddress(id, verb)
+--dynamic address configuration protocol
+
+function unet.dacp(id, verb)
   if unet.driver.inter[id] and unet.driver.inter[id].isAvailable then
     
     if unet.driver.inter[id].parent == "0" then
@@ -78,8 +81,15 @@ end
 
 --unicast for unet, a targeted message
 
-function unet.ucast(addr, flag, data)
-  
+function unet.ucast(addr, port, flag, data)
+
+  if unet.arp.routes[addr] then
+    local route = unet.arp.routes[addr]
+
+    unet.driver.inter[routes.id].usend(route.hw, port, "UCAST", pack.serialize({["source"]=unet.arp.getAddress[][][]data}))
+  else
+
+  end
 end
 
 --multicast for unet, a targeted message for a group of devices
