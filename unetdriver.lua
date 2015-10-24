@@ -13,7 +13,7 @@ unet.driver.inter = {}
 
 unet.driver.info = {    
 ["osBuild"] = "OpenOS 1.5",
-["version"] = "0.0.5 ALPHA",
+["version"] = "1.0.0 ALPHA",
 ["allowOutdated"] = false,
 ["config"] = "/unet/driver/config.cfg",
 ["mods"] = "/unet/driver/mods"
@@ -53,11 +53,11 @@ function unet.driver.saveConfig()
   
   local toSave = {}
   
-  --strip functions and the logical addr from the data to be saved
+  --strip functions from the data to be saved
   
   for k,v in pairs(unet.driver.inter) do
     toSave[k] = v
-	toSave[k].usend,toSave[k].ubroadcast,toSave[k].routeAddr = nil,nil,nil
+	toSave[k].usend,toSave[k].ubroadcast = nil,nil
   end
   
   file:write(serialization.serialize(toSave))
@@ -97,7 +97,7 @@ function unet.driver.getID(addr,create)
     id = #unet.driver.inter + 1
   end
   
-  unet.driver.inter[id] = {["hw_addr"]=addr,["routeAddr"]="0",["parent"]="0",["parusr"]="",["parpass"]=""}
+  unet.driver.inter[id] = {["hw_addr"]=addr}
   unet.driver.saveConfig()
   return id
   
