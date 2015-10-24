@@ -1,10 +1,16 @@
 local computer = require("computer")
 local event = require("event")
+local fs = require("filesystem")
 local os = require ("os")
 local pack = require("serialization")
 local unet = require("unet")
 
-unet.arp = {routes = {}}
+unet.arp = {routes = {},info = {
+unet_version = "1.0.0 ALPHA",
+version = ".1",
+os_build = "OpenOS 1.5",
+config = "/unet/arp/config.cfg"}
+}
 
 
 --arp addressing system for unet, used for addressing in both managed and unmanaged networks.
@@ -16,6 +22,31 @@ unet.arp = {routes = {}}
 --0 is not a valid address, it is a valid subnetwork though:
 --0/1 is a valid address
 --4/2543/2522/33/442/88/9 is also a valid address (must be a big network to get this though!)
+
+function unet.arp.saveConfig()
+  local toSave = {routes = {}, inter = {}}
+  
+  for k,v in pairs(unet.arp.routes) do
+    if v.static then
+      toSave.routes[k] = v
+    end
+  end
+  
+  toSave
+  
+end
+
+function unet.arp.loadConfig()
+  if not fs.exists(unet.arp.info.config) then
+    unet.arp.saveConfig()
+  end
+  local file = fs.open(unet.arp.info.config,"r")
+  local data = file.read(math.huge)
+  file.close()
+  data = pack.unserialize(data)
+  unet.arp.routes = data.routes
+  unet.arp.inter = data.inter
+end
 
 local function verbose(bool, ...)
   if bool then
