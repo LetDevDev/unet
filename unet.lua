@@ -2,7 +2,7 @@ local component = require("component")
 local computer = require("computer")
 local event = require("event")
 local fs = require("filesystem")
-local serialization = require("serialization")
+local pack = require("serialization")
 
 local unet = {}
 
@@ -16,7 +16,10 @@ unet.info = {   --version info, used in preloading and version control DO NOT ED
 }
 
 function saveConfig()
-  local toSave = {}
+  local toSave = {
+  ["gateway"] = unet.info.gateway,
+  ["inter"] = unet.info.inter
+  }
 
 end
 
