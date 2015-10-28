@@ -6,12 +6,24 @@ local serialization = require("serialization")
 
 local unet = {}
 
-unet.info = {   --version info, used in preloading and version control DO NOT EDIT 
+unet.info = {   --version info, used in preloading and version control DO NOT EDIT
+["gateway"] = {["addr"] = "", ["id"] = 1}, ["inter"] = {},
 ["os_build"] = "OpenOS 1.5",
-["version"] = "0.0.5 ALPHA",
+["version"] = "1.0.0 Beta",
 ["allowOutdated"] = false,
-["mods"] = "/unet/mods"
+["mods"] = "/unet/mods",
+["config"] = "/unet/config.cfg"
 }
+
+function saveConfig()
+  local toSave = {}
+
+end
+
+
+function loadConfig()
+
+end
 
 --because unet will try to use a var _DEVICENAME that may or may not exist
 --this function checks to make sure that the var acutally exists, and 
