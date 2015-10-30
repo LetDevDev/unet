@@ -16,16 +16,30 @@ unet.info = {   --version info, used in preloading and version control DO NOT ED
 }
 
 function saveConfig()
-  local toSave = {
-  ["gateway"] = unet.info.gateway,
-  ["inter"] = unet.info.inter
-  }
+  local toSave = {["gateway"] = unet.info.gateway,["inter"] = {}}
+  
+  for k,v in pairs(unet.info.inter) do
+    if unet.info.inter[k].static then
+      toSave.inter
+  end
 
+  local file = fs.open(unet.info.config,"w")
+  file.write(pack.serialize(toSave))
+  file.close()
 end
 
 
 function loadConfig()
-
+  if not fs.exists(unet.info.config) then
+    saveConfig()
+  end
+  
+  local file = fs.open(unet.info.config)
+  local toLoad = file.read(math.huge)
+  file.close()
+  
+  unet.info.gateway = toLoad.gateway
+  unet.info.inter = toLoad.inter
 end
 
 --because unet will try to use a var _DEVICENAME that may or may not exist
