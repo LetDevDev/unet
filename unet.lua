@@ -18,11 +18,12 @@ unet.info = {   --version info, used in preloading and version control DO NOT ED
 function saveConfig()
   local toSave = {["gateway"] = unet.info.gateway,["inter"] = {}}
   
-  for k,v in pairs(unet.info.inter) do
-    if unet.info.inter[k].static then
-      toSave.inter
+  for k,v in pairs(unet.info.inter do
+    if v.static then
+      toSave.inter[k] = v
+    end
   end
-
+  
   local file = fs.open(unet.info.config,"w")
   file.write(pack.serialize(toSave))
   file.close()
@@ -42,9 +43,6 @@ function loadConfig()
   unet.info.inter = toLoad.inter
 end
 
---because unet will try to use a var _DEVICENAME that may or may not exist
---this function checks to make sure that the var acutally exists, and 
---uses the computer addr as a replacement name if the var does not exist
 
 function unet.getName()
   if _DEVICENAME then 
@@ -54,22 +52,14 @@ function unet.getName()
   end
 end
 
---usually called by other functions in other modules, this is used to determine
---the first available interface, and returns it's id.
-
-function unet.resolveID()
-  for i=1,#unet.driver.inter do
-    if unet.driver.inter[i] and unet.driver.inter[i].isAvailable then 
-	    return i
-	  end
-  end
-  return false
+function unet.compareAddr(addr,inter)
+  
 end
 
---version checker and module loader, looks for a file with the argument as it's name
---then checks to see if it is already loaded, or if it has is valid for loading, ie
---built for this version of unet and this OS. it loads it and returns true, or an error
---message if it could not load.
+function unet.resolveID(addr)
+  return unet.info.gateway.id
+end
+
 
 function unet.loadMod(name)
   if unet[name] then
@@ -80,7 +70,7 @@ function unet.loadMod(name)
 	    return true,"Mod loaded into unet"
 	  else
 	    return false,"Mod failed to load"
-	  end
+    end
   end
 end
 
