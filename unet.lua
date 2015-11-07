@@ -16,11 +16,11 @@ unet.info = {   --version info, used in preloading and version control DO NOT ED
 }
 
 function saveConfig()
-  local toSave = {["gateway"] = unet.info.gateway,["inter"] = {}}
+  local toSave = {["gateway"] = unet.info.gateway,["inter"] = unet.info.inter}
   
-  for k,v in pairs(unet.info.inter do
-    if v.static then
-      toSave.inter[k] = v
+  for k,v in pairs(unet.info.inter) do
+    if not v.static then
+      toSave[k].addr = ""
     end
   end
   
@@ -52,12 +52,14 @@ function unet.getName()
   end
 end
 
-function unet.compareAddr(addr,inter)
-  
+function unet.compareAddr(addr)
+  for k,v in pairs() do
+  	
+  end
 end
 
-function unet.resolveID(addr)
-  return unet.info.gateway.id
+function unet.getID(addr)
+  
 end
 
 
@@ -66,12 +68,16 @@ function unet.loadMod(name)
     return true,"Mod already loaded into memory"
   elseif fs.exists(unet.info.mods.."/"..name..".lua") then
     dofile(unet.info.mods.."/"..name..".lua")
-	  if unet[name] then
-	    return true,"Mod loaded into unet"
-	  else
-	    return false,"Mod failed to load"
+    if unet[name] then
+      return true,"Mod loaded into unet"
+    else
+      return false,"Mod failed to load"
     end
   end
+end
+
+function unet.transmit(dest,ttl,packetType,data)
+  local matched, id = unet.getID(dest)
 end
 
 return unet
