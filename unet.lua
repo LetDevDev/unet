@@ -7,7 +7,7 @@ local pack = require("serialization")
 local unet = {}
 
 unet.info = {   --version info, used in preloading and version control DO NOT EDIT
-["gateway"] = {["addr"] = "", ["id"] = 1}, ["inter"] = {},
+["gateway"] = 1, ["inter"] = {},
 ["os_build"] = "OpenOS 1.5",
 ["version"] = "1.0.0 Beta",
 ["allowOutdated"] = false,
@@ -27,6 +27,7 @@ function saveConfig()
   local file = fs.open(unet.info.config,"w")
   file.write(pack.serialize(toSave))
   file.close()
+  computer.pushSignal("unet_config_saved")
 end
 
 
@@ -41,6 +42,7 @@ function loadConfig()
   
   unet.info.gateway = toLoad.gateway
   unet.info.inter = toLoad.inter
+  computer.pushSignal("unet_config_loaded")
 end
 
 
@@ -52,16 +54,14 @@ function unet.getName()
   end
 end
 
-function unet.compareAddr(addr)
-  for k,v in pairs() do
-  	
+function unet.setGateway(id)
+  if unet.driver.inter[id].isAvailible then
+    unet.info.gateway = id
+    unet.saveConfig()
+    return true
   end
+  return false
 end
-
-function unet.getID(addr)
-  
-end
-
 
 function unet.loadMod(name)
   if unet[name] then
@@ -76,8 +76,11 @@ function unet.loadMod(name)
   end
 end
 
-function unet.transmit(dest,ttl,packetType,data)
-  local matched, id = unet.getID(dest)
+function unet.transmit(dest,ttl,packetType,data,inter)
+  if not inter then
+    inter = unet.info.gateway
+  end
+  
 end
 
 return unet
