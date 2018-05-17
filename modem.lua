@@ -1,217 +1,125 @@
-local tArgs = {...}
-
 local component = require("component")
-local computer = require("computer")
 local event = require("event")
-local os = require("os")
-unet = require("unet")
+local serial = require("serialization")
+local unet = require("unet")
 
-local version,osBuild = "0.0.5 ALPHA","OpenOS 1.5"
+_modem_driver = {}
 
-if version ~= unet.driver.info.version and not unet.driver.info.allowOutdated then
-  error("Version mismatch: refer to documentation",3)
-elseif osBuild ~= unet.driver.info.osBuild then
-  error("OS mismatch: refer to documentation",3)
+_modem_driver.resolve = function(interface, addr)
+  for i = 1, #interface.arp_cache,1 do
+    if interface.arp_cache[i][1] == addr then
+      return true, interface.arp_cache[i][2]
+    end
+  end
+  
+  component.invoke(interface.hw_addr,"broadcast",interface.hw_channel,"arp_request",interface.addr,addr)
+  
+  success,_,mac = event.pull(5,"modem_message",interface.hw_addr,nil,interface.hw_channel,nil,"arp_reply",addr)
+  
+  if success ~= nil then
+    table.insert(interface.arp_cache,{addr,mac})
+    interface.arp_cache[interface.arp_cache.max_entries + 1] = nil
+    return true, mac
+  end
+  
+  return false
 end
 
---print("modem mod loaded")
---print(tArgs[1].." "..tArgs[2])
-
-if tArgs[1] == "init" and component.type(tArgs[2]) == "modem" then
-  local id = unet.driver.getID(tArgs[2])
-  
-  for k,v in pairs(unet.driver.ports) do
-    component.invoke(unet.driver.inter[id].hw_addr,"open",v)
+_modem_driver.isend = function(self,dest,proto,data)
+  if not self.state then
+    return false
   end
-
-  unet.driver.inter[id].usend = function(dest,port,flag,data)
-  
-    if not unet.driver.inter[id].isAvailable then
-      return false,"Interface is not avalible"
-    elseif type(flag) ~= "string" or #flag > 128 then
-      error("Malformed Flag: refer to documentation",3)
-    elseif type(data) ~= "string" or #data > 4096 then
-      error("Malformed Packet: refer to documentation",3)
+  if unet.utils.getBroadcastAddr(self) == dest then
+    return component.invoke(self.hw_addr,"broadcast",self.hw_channel,"unet_packet",self.addr,dest,proto,data)
+  else
+    success,mac = resolve(self,dest)
+    if success then
+      return component.invoke(self.hw_addr,"send",mac,self.hw_channel,"unet_packet",self.addr,dest,proto,data)
     end
-	
-    local nport
-	
-    for k,v in pairs(unet.driver.ports) do
-      if k == port then
-        nport = v
-        break
+    return success
+  end
+end
+
+_modem_driver.recieve = function(name,our_mac,their_mac,channel,distance,preamble,their_ip,our_ip,proto,data)
+  if preamble == "unet_packet" then
+    for k,v in pairs(unet.interfaces) do
+      if v.hw_addr == our_mac and (v.addr == our_ip or unet.utils.getBroadcastAddr(v) == our_ip) then
+        event.push("unet_packet",our_ip,their_ip,proto,data)
       end
     end
-	
-    if not nport then
-      error("Bad argument: 2, no such port",3)
-    end
-	
-    if component.invoke(unet.driver.inter[id].hw_addr,"send",dest,nport,flag,data,os.date()) then
-      unet.driver.inter[id].tx.packets = unet.driver.inter[id].tx.packets + 1
-      unet.driver.inter[id].tx.bytes = unet.driver.inter[id].tx.bytes + #flag + #data + #os.date()
-      return true
-    end
-    
-  end
-  
-  unet.driver.inter[id].ubroadcast = function(port,flag,data)
-  
-    if not unet.driver.inter[id].isAvailable then
-      return false,"Interface is not avalible"
-    elseif type(flag) ~= "string" or #flag > 128 then
-      error("Malformed Flag: refer to documentation",3)
-    elseif type(data) ~= "string" or #data > 4096 then
-      error("Malformed Packet: refer to documentation",3)
-    end
-	
-    local nport
-
-    for k,v in pairs(unet.driver.ports) do
-      if k == port then
-        nport = v
-        break
+  elseif preamble == "arp_request" then
+    for k,v in pairs(unet.interfaces) do
+      if v.hw_addr == our_mac and v.addr == our_ip then
+        component.invoke(v.hw_addr,"send",their_mac,channel,"arp_reply",v.addr)
       end
     end
-
-    if not nport then
-      error("Bad argument: 2, no such port",3)
-    end
-	
-    if component.invoke(unet.driver.inter[id].hw_addr,"broadcast",nport,flag,data,os.date()) then
-      unet.driver.inter[id].tx.packets = unet.driver.inter[id].tx.packets + 1
-      unet.driver.inter[id].tx.bytes = unet.driver.inter[id].tx.bytes + #flag + #data + #os.date()
-      return true
-    end
-	
   end
+end
+
+event.listen("modem_message",recieve)
+
+function _modem_driver.create(name,hw_addr,channel,cache,addr,subnet,dhcp)
+  if not component.slot(hw_addr) then
+    return false, "no such component"
+  end
+  
+  if not component.invoke(hw_addr,"open",channel) then
+    return false, "no avalable ports"
+  end
+  
+  if unet.interfaces[name] then
+    return false, "interface with name exists"
+  end
+  
+  unet.interfaces[name] = {
+    hw_addr = k,
+    hw_channel = 2,
+    arp_cache = {max_entries = 5},
+    addr = 0x0000000000010000 + math.floor(math.random(1,0xFFFE)),
+    dhcp = dhcp,
+    subnet = subnet,
+    state = true, 
     
-  unet.driver.inter[id].isAvailable = true
-  unet.driver.inter[id].type = "ethernet"
-  unet.driver.inter[id].routeAddr = "0"
-  
-  unet.driver.inter[id].tx = {["packets"]=0,["bytes"]=0}
-  unet.driver.inter[id].rx = {["packets"]=0,["bytes"]=0}
-  
+    send = isend
+  }
 end
 
-if tArgs[1] == "init" and component.type(tArgs[2]) == "tunnel" then
-  local id = unet.driver.getID(tArgs[2])
-  
-  unet.driver.inter[id].usend = function(dest,port,flag,data)
-  
-    if not unet.driver.inter[id].isAvailable then
-      return false,"Interface is not avalible"
-    elseif type(flag) ~= "string" or #flag > 128 then
-      error("Malformed Flag: refer to documentation",3)
-    elseif type(data) ~= "string" or #data > 4096 then
-      error("Malformed Packet: refer to documentation",3)
-	elseif not unet.driver.ports[port] then
-	  error("Bad argument: 2, no such port",3)
-    end
+function _modem_driver.load()
+
+end
+
+function _modem_driver.save()
+
+end
+
+function _modem_driver.remove()
+
+end
+
+for k,v in pairs(modems) do
+  if component.invoke(k,"isWireless")  then 
+    component.invoke(k,"open",2)
     
-    if component.invoke(unet.driver.inter[id].hw_addr,"send",flag,data,os.date(),port) then
-      unet.driver.inter[id].tx.packets = unet.driver.inter[id].tx.packets + 1
-      unet.driver.inter[id].tx.bytes = unet.driver.inter[id].tx.bytes + #flag + #data + #os.date()
-	  return true
-	end
+    unet.interfaces["wifi"..component.slot(k)] = {
+      
+    }
+  end
+  if component.invoke(k,"isWired") then
+    component.invoke(k,"open",1)
     
+    unet.interfaces["eth"..component.slot(k)] = {
+      hw_addr = k,
+      hw_channel = 1,
+      arp_cache = {max_entries = 5},
+      addr = 0x0000000000010000 + math.floor(math.random(1,0xFFFE)),
+      subnet = 0xFFFFFFFFFFFF0000,
+      state = true,
+      
+      send = isend
+    }
   end
-  
-  unet.driver.inter[id].ubroadcast = function(port,flag,data)
-  
-    if not unet.driver.inter[id].isAvailable then
-      return false,"Interface is not avalible"
-    elseif type(flag) ~= "string" or #flag > 128 then
-      error("Malformed Flag: refer to documentation",3)
-    elseif type(data) ~= "string" or #data > 4096 then
-      error("Malformed Packet: refer to documentation",3)
-    elseif not unet.driver.ports[port] then
-      error("Bad argument: 2, no such port",3)
-    end
-	
-	if component.invoke(unet.driver.inter[id].hw_addr,"send",flag,data,os.date(),port) then
-      unet.driver.inter[id].tx.packets = unet.driver.inter[id].tx.packets + 1
-      unet.driver.inter[id].tx.bytes = unet.driver.inter[id].tx.bytes + #flag + #data + #os.date()
-	  return true
-	end
-	
-  end
-  
-  unet.driver.inter[id].isAvailable = true
-  unet.driver.inter[id].type = "tunnel"
-  unet.driver.inter[id].routeAddr = "0"
-  
-  unet.driver.inter[id].tx = {["packets"]=0,["bytes"]=0}
-  unet.driver.inter[id].rx = {["packets"]=0,["bytes"]=0}
+
+  print("Registered modem: "..k)
+   
 end
 
---print(tArgs[1] == "disable")
---print(component.type(tArgs[2]))
-
-if tArgs[1] == "disable" and tArgs[3] == "modem" or tArgs[3] == "tunnel" then
-  
-  --print("disabling")
-  
-  local id = unet.driver.getID(tArgs[2])
-  
-  unet.driver.inter[id].usend = nil
-  unet.driver.inter[id].ubroadcast = nil
-  unet.driver.inter[id].isAvailable = false
-  
-end
-
-local old = {{},{},{},{},{}}
-local limit = 5
-
-local function areMatching(tData)
-  
-  for i=1,limit do
-    for j=1,#old[i] do
-	  if old[i][j] ~= tData[j] then
-	    --print(i.." : "..j.." No Match")
-	    break
-	  elseif j == #old[i] and j == #tData then
-	    --print("match")
-	    return true
-	  end
-	end
-  end
-  
-end
-
-local function onModemMessage(...)
-  local tArgs = {...}
-  local port
-  
-  --print("message")
-  
-  local matching
-  
-  if areMatching(tArgs) then return end
-  
-  table.insert(old,tArgs)
-  if #old > limit then
-    table.remove(old,1)
-  end
-  
-  if tArgs[4] == 0 and unet.driver.ports[tArgs[9]] then
-    port = tArgs[9]
-  end
-  
-  for k,v in pairs(unet.driver.ports) do
-    if tArgs[4] == v then port = k end
-  end
-
-  if not port then return end
-  local id = unet.driver.getID(tArgs[2])
-  
-  if not id then return end
-  
-  unet.driver.inter[id].rx.packets = unet.driver.inter[id].rx.packets + 1
-  unet.driver.inter[id].rx.bytes = unet.driver.inter[id].rx.bytes + (#tArgs[6] + #tArgs[7] + #tArgs[8])
-  
-  computer.pushSignal("unet_hw_message",tArgs[3],id,port,tArgs[6],tArgs[8],tArgs[7])
-end
-
-event.listen("modem_message",onModemMessage)
