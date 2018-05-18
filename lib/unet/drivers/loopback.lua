@@ -10,7 +10,7 @@ local isend = function(self,dest,proto,data)
 end
 
 unet.interfaces.lo0 = {
-  hw_addr = "00000000-0000-0000-0000-000000000000",
+  hw_type = "software_loopback",
   addr = 0x0000000000000001,
   subnet = 0xFFFFFFFFFFFFFFFE,
   state = true,
